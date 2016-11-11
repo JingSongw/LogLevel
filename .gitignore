@@ -1,0 +1,273 @@
+//读取文件夹下面的图片
+	public void ParsingWarImage(){
+		//创建一个新的文件夹
+		String fileCopyImage=CreateFile();
+		EstateDictSvr EstateDictSvrlist=new EstateDictSvr();
+		
+		List<TFrameImage> tFrameImagelist=new ArrayList<TFrameImage>();//frame_image
+		List<EstateDictSvr> list=new ArrayList<EstateDictSvr>();//EstateDictSvr
+		List<TImageAppendant> tImageAppendantlist=new ArrayList<TImageAppendant>();
+		
+	    String path = "F:\\Image\\1008户型图\\1008\\1008户型";  
+		File file = new File(path);
+        File [] files = file.listFiles();
+        for (int i = 0; i < files.length; i++)
+        {
+            File file1 = files[i];
+            if(file1.isDirectory()){
+            	System.out.println("ESTATE"+file1.getName());
+            	File [] file2 = file1.listFiles();
+            	for(int j = 0; j < file2.length; j++){
+            		 File filenew = file2[j];
+            		 if(filenew.isDirectory()){
+            			 File [] file3 = filenew.listFiles(); 
+            			 for (int k = 0; k < file3.length; k++) {
+            				 File filenewtest=file3[k];
+            					String  fileImage=filenewtest.getName();
+            					String IndexMax=fileImage.substring(fileImage.length()-3,fileImage.length());
+            					if(IndexMax.equals("jpg")){
+            						EstateDictSvrlist=	FastCopyFile(filenewtest.toString(),fileCopyImage);// iO流
+            						list.add(EstateDictSvrlist);
+            						TFrameImage tFrameImage=new TFrameImage();
+            						tFrameImage.setEstateId(Long.parseLong(file1.getName()));
+            						tFrameImage.setImageId(EstateDictSvrlist.getId());
+            						tFrameImagelist.add(tFrameImage);
+            						TImageAppendant tImageAppendant=new TImageAppendant();
+            						//tImageAppendant.setRelationId(tFrameImage.getPkid());
+            						tImageAppendant.setImageId(tFrameImage.getImageId());
+            						tImageAppendant.setHouseCount(new Integer(filenew.getName()));
+            						tImageAppendantlist.add(tImageAppendant);
+            					 }
+						    }
+            	        }
+            	    }
+        	   
+               }
+         }
+       SaveImageId(list);
+       frameSaveImage(tFrameImagelist);
+       tFrameImagelist=  getValueIds(tFrameImagelist);
+       TImageAppendantSave(tImageAppendantlist,tFrameImagelist);
+	}
+	
+	public String  CreateFile(){
+		  Date date=new Date();
+		  DateFormat format=new SimpleDateFormat("yyyy-MM-dd");
+		  String time=format.format(date);
+		  
+		  File fileCopyImage=new File("F:\\Image\\"+time);
+			 if  (!fileCopyImage .exists()  && !fileCopyImage .isDirectory())      
+			 {       
+			     System.out.println("//不存在");  
+			     fileCopyImage .mkdir();    
+			 } 
+		
+			 
+			 return fileCopyImage.toString();
+	}
+	
+	//@param srcFileName 待复制的文件名 
+	//* @param destFileName 目标文件名
+	public EstateDictSvr FastCopyFile(String  srcFileName, String destFileName){
+		EstateDictSvr estateDictSvr= new EstateDictSvr();
+		  File srcFile = new File(srcFileName);
+		  if (!srcFile.exists()){
+			   System.out.println("复制失败：原文件" + srcFileName + "不存在！");
+		  }
+		  File destFile = new File(destFileName);
+		  if (!destFile.exists()){
+			   System.out.println("复制失败：原文件" + destFileName + "不存在！");
+		  }else{
+			  destFile .mkdir();    
+		  }
+		  //准备复制文件
+		  int byteread = 0;//读取的位数
+		  InputStream in = null;
+		  OutputStream out = null;
+		  try {
+			   //打开原文件
+			   in = new FileInputStream(srcFile);  
+			   //打开连接到目标文件的输出流
+			    String  UUIDrandomUUID=  ToCharUUId(UUID.randomUUID().toString());//Sprit('-')
+			    estateDictSvr.setFileName(UUIDrandomUUID+".jpg");
+			    estateDictSvr.setFilePath("2016/0/0/"+UUIDrandomUUID+".jpg");
+			   out = new FileOutputStream(destFileName+"\\"+UUIDrandomUUID+".jpg");
+			   estateDictSvr.setId(UUIDrandomUUID);
+			   byte[] buffer = new byte[1024];
+			   //一次读取1024个字节，当byteread为-1时表示文件已经读完
+			   while ((byteread = in.read(buffer)) != -1) {
+			    //将读取的字节写入输出流
+			    out.write(buffer, 0, byteread);
+			   }
+			   System.out.println("复制单个文件" + srcFileName + "至" + destFileName + "成功！");
+			  } catch (Exception e) {
+				  
+			   System.out.println("复制文件失败：" + e.getMessage());
+			   
+			  } finally {
+			   //关闭输入输出流，注意先关闭输出流，再关闭输入流
+			   if (out != null){
+			    try {
+			     out.close();
+			    } catch (IOException e) {
+			     e.printStackTrace();
+			    }
+			   }
+			   if (in != null){
+			    try {
+			     in.close();
+			    } catch (IOException e) {
+			     e.printStackTrace();
+			    }
+			   }
+			  }
+		  
+		 return  estateDictSvr; 
+		 
+	}
+	
+	
+	
+	//处理UUID.去除UUID中的-, 存储UUID
+	public String ToCharUUId(String UUId){
+	 String UUIdRoom=UUId.toString().replaceAll("-", "");
+		return UUIdRoom;
+	}
+	
+	
+	
+	// 得到ImageId,遍历存到EstateDictSvr中
+	
+	public String  SaveImageId(List<EstateDictSvr> estateDictSvr){
+		String flag="";
+	  if (CollectionUtils.isNotEmpty(estateDictSvr)) {
+			try{
+			//INSERT EstateDictSvr
+			String insertsql = "INSERT INTO sales.EstateDictSvr"
+					+ " (ID,FILE_NAME,FILE_PATH,FILE_TYPE,CREATE_BY,IS_DELETED) VALUES (?,?,?,?,?,?)";
+			sqlTemplate.batchUpdate(insertsql, new BatchPreparedStatementSetter() {
+				
+				@Override
+				public void setValues(PreparedStatement ps, int i) throws SQLException {
+					EstateDictSvr EstateDict=estateDictSvr.get(i);
+					ps.setString(1, EstateDict.getId());
+					ps.setString(2, EstateDict.getFileName());
+					ps.setString(3, EstateDict.getFilePath());
+					ps.setString(4, "JPG");
+					ps.setString(5, "MMD");
+					ps.setString(6, "0");
+				}
+				@Override
+				public int getBatchSize() {
+					return estateDictSvr.size();
+				}
+			});
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+	  }	
+		return flag;
+		
+	  }
+	
+	
+
+	// 得到ImageId,遍历存到frame_image中
+	
+	public String  frameSaveImage(List<TFrameImage> tFrameImage){
+		String flag="";
+	  if (CollectionUtils.isNotEmpty(tFrameImage)) {
+			try{
+			//INSERT frame_image
+			String insertsql = "insert into  sales.frame_image "
+					+ "(FRAME_ID,ESTATE_ID,image_id,image_type,CREATE_BY,IS_DELETED)VALUES (?,?,?,?,?,?)";
+			sqlTemplate.batchUpdate(insertsql, new BatchPreparedStatementSetter() {
+				
+				@Override
+				public void setValues(PreparedStatement ps, int i) throws SQLException {
+					TFrameImage frameImage=tFrameImage.get(i);
+					ps.setLong(1,frameImage.getEstateId());
+					ps.setLong(2,frameImage.getEstateId());
+					ps.setString(3, frameImage.getImageId());
+					ps.setString(4, "ESTATE");
+					ps.setString(5, "MMD");
+					ps.setString(6, "0");
+					
+				}
+				@Override
+				public int getBatchSize() {
+					return tFrameImage.size();
+				}
+			});
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+	  }	
+		return flag;
+		
+	  }
+	
+
+
+	
+	
+	// 得到ImageId,遍历存到frame_image中
+	
+		public String  TImageAppendantSave(List<TImageAppendant> tImageAppendant,List<TFrameImage> tFrameImage){
+			String flag="";
+		  if (CollectionUtils.isNotEmpty(tImageAppendant)) {
+				try{
+				//INSERT frame_image
+				String insertsql = "insert into  sales.image_appendant"
+						+ "(image_id,house_count,image_title,relation_id,CREATE_BY,IS_DELETED)VALUES (?,?,?,?,?,?)";
+				sqlTemplate.batchUpdate(insertsql, new BatchPreparedStatementSetter() {
+					
+					@Override
+					public void setValues(PreparedStatement ps, int i) throws SQLException {
+						TImageAppendant imageAppendant=tImageAppendant.get(i);
+						TFrameImage  tFrameImagea=tFrameImage.get(i);
+						ps.setString(1,imageAppendant.getImageId());
+						ps.setLong(2,imageAppendant.getHouseCount());
+						ps.setString(3,HouImageTitleEnum.LAYOUT_PIC.getCode());
+						ps.setLong(4, tFrameImagea.getPkid());
+						ps.setString(5, "MMD");
+						ps.setString(6, "0");
+					}
+					
+					@Override
+					public int getBatchSize() {
+						return tImageAppendant.size();
+					}
+				});
+				}catch(Exception e){
+					e.printStackTrace();
+				}
+		  }	
+			return flag;
+			
+		  }
+	
+		
+		
+		public List<TFrameImage> getValueIds(List<TFrameImage> tframeImage){
+			List<TFrameImage>  frameImagenew=new ArrayList<TFrameImage>();
+			
+			 for(int i=0; i<tframeImage.size(); i++){
+			sqlTemplate.query("select  pkid  from  sales.frame_image imge  where image_id =?",   
+					 
+			new Object[] {tframeImage.get(i).getImageId()},    
+			new RowCallbackHandler() {    
+		
+			public void processRow(ResultSet rs) throws SQLException {    
+		    TFrameImage frameImage = new TFrameImage();   
+			frameImage.setPkid(rs.getLong("pkid"));
+			frameImagenew.add(frameImage);
+			}  
+			    
+			});  
+			}	
+			return frameImagenew;
+		}
+		
+
+	
