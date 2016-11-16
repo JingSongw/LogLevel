@@ -1,0 +1,42 @@
+package com.centaline.test;
+
+import java.util.List;
+import java.util.Set;
+
+import redis.clients.jedis.Jedis;
+
+public class TestRedis {
+
+	
+	public static void main(String[] args) {
+		Jedis  jsdis=new Jedis ("localhost");
+		jsdis.auth("password");
+		System.out.println("连接本地ReDis--------"+jsdis.ping());
+	    jsdis.set("table", "bigsb");	
+		jsdis.get("table");
+		jsdis.lrange("hawei", 1, 10);
+		System.out.println("table----------" +jsdis.get("table"));
+		//add List
+		jsdis.lpush("hawei", "ReSONY"); 
+		jsdis.lpush("hawei", "ReApple");
+		List<String> LrangeList=jsdis.lrange("hawei", 0, 9);
+		for(int i=0; i<LrangeList.size(); i++){
+			System.out.println("LrangeList-------"+LrangeList.get(i));
+		}
+		//add Set
+		
+	   jsdis.zadd("huawei",10, "aa");
+	   Set<String> set=jsdis.smembers("huawei");
+	   for (int i = 0; i < set.size(); i++) {
+		   
+		   System.out.println("");
+		
+     	}
+		
+		
+		
+	}
+	
+	
+
+}
